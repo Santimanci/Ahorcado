@@ -42,13 +42,15 @@
           :style="{ background: categoria.color }"
         >
           <div class="category-icon">
-            <q-icon :name="categoria.icono" size="40px" />
+          
+            <q-icon @click = ""  :name="categoria.icono" size="40px"  />
           </div>
-          <q-btn to="/nivel"> 
+          <q-btn  to="/nivel">
           <h3 class="category-name">{{ categoria.nombre }}</h3>
           <p class="category-desc">{{ categoria.descripcion }}</p>
           <div class="category-hover"></div>
-          </q-btn>
+       </q-btn> 
+        
         </div> 
       </div>
       
