@@ -30,6 +30,7 @@
         label="¡JUGAR AHORA!"
         class="btn-jugar q-mt-xl animated-button"
       >
+      
         <template v-slot:loading>
           <q-spinner-hourglass class="on-left" />
           Cargando...

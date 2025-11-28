@@ -39,11 +39,18 @@
             :loading="loading"
             :disable="!nombreUsuario.trim()"
           >
+    
             <template v-slot:loading>
               <q-spinner-hourglass class="on-left" />
               Iniciando...
             </template>
           </q-btn>
+          <q-btn
+          to ="/"
+            type="submit"
+            label="Volver"
+            class="btn-login"
+          ></q-btn>
         </q-form>
       </div>
     </div>
