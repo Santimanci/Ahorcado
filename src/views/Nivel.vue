@@ -19,31 +19,30 @@
             round 
             icon="arrow_back" 
             class="btn-back"
-            @click="volverACategorias"
             title="Volver a categorías"
           />
           <div class="header-text">
-          <h1 class="title">Selecciona el Nivel</h1>
-          <div class="category-info">
-            <div 
-              class="category-badge" 
-              :style="{ background: categoriaActual.color || '#667eea' }"
-            >
-              {{ categoriaActual.nombre }}
+            <h1 class="title">Selecciona el Nivel</h1>
+            <div class="category-info">
+              <div 
+                class="category-badge" 
+                :style="{ background: categoriaActual.color || '#667eea' }"
+              >
+                {{ categoriaActual.nombre }}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
       <!-- Niveles de dificultad -->
       <div class="levels-container">
         <div 
-          v-for="nivel in niveles" 
-          :key="nivel.id"
-          class="level-card"
-          @click="seleccionarNivel(nivel)"
-        >
+  v-for="nivel in niveles" 
+  :key="nivel.id"
+  class="level-card"
+  @click="seleccionarNivel(nivel)"
+>
           <div class="level-header-card">
             <h3 class="level-name">{{ nivel.nombre }}</h3>
             <div class="level-badge" :class="nivel.clase">
@@ -60,6 +59,10 @@
               <div class="info-item">
                 <q-icon name="refresh" size="16px" class="q-mr-xs" />
                 <span>{{ nivel.intentos }} intentos</span>
+              </div>
+              <div class="info-item">
+                <q-icon name="lightbulb" size="16px" class="q-mr-xs" />
+                <span>{{ nivel.pistas }} pistas</span>
               </div>
             </div>
           </div>
@@ -125,7 +128,8 @@ const niveles = ref([
     clase: 'facil',
     descripcion: 'Palabras de 4-6 letras',
     palabras: '4-6 letras',
-    intentos: 8
+    intentos: 8,
+    pistas: 3
   },
   {
     id: 2,
@@ -134,7 +138,8 @@ const niveles = ref([
     clase: 'medio',
     descripcion: 'Palabras de 7-9 letras',
     palabras: '7-9 letras',
-    intentos: 6
+    intentos: 6,
+    pistas: 2
   },
   {
     id: 3,
@@ -143,7 +148,8 @@ const niveles = ref([
     clase: 'dificil',
     descripcion: 'Palabras de 10+ letras',
     palabras: '10+ letras',
-    intentos: 5
+    intentos: 5,
+    pistas: 1
   }
 ])
 
@@ -160,7 +166,7 @@ onMounted(() => {
     return
   }
   
-  if (!route.query.nombre && !route.params.categoriaId) {
+  if (!route.query.nombre && !localStorage.getItem('categoriaSeleccionada')) {
     $q.notify({
       type: 'info',
       message: 'No hay categoría seleccionada. Redirigiendo...',
@@ -181,34 +187,29 @@ onMounted(() => {
   }
 })
 
-const seleccionarNivel = (nivel) => {
+const seleccionarNivel = (nivelSeleccionado) => {
+  console.log('Nivel seleccionado:', nivelSeleccionado)
+  console.log('Categoría actual:', categoriaActual.value)
+  
   $q.notify({
     type: 'positive',
-    message: `¡Nivel ${nivel.nombre} seleccionado para "${categoriaActual.value.nombre}"!`,
+    message: `¡Nivel ${nivelSeleccionado.nombre} seleccionado para "${categoriaActual.value.nombre}"!`,
     position: 'top',
     timeout: 1000
   })
   
-  console.log('Iniciando juego con:', {
-    categoria: categoriaActual.value,
-    nivel: nivel
+  // Guardar nivel seleccionado en localStorage
+  localStorage.setItem('nivelSeleccionado', JSON.stringify(nivelSeleccionado))
+  
+  console.log('LocalStorage después de guardar:', {
+    nivel: localStorage.getItem('nivelSeleccionado'),
+    categoria: localStorage.getItem('categoriaSeleccionada')
   })
   
-  localStorage.setItem('categoriaSeleccionada', JSON.stringify(categoriaActual.value))
-  localStorage.setItem('nivelSeleccionado', JSON.stringify(nivel))
-  
+  // Navegar directamente al juego después de un breve delay
   setTimeout(() => {
-    $q.dialog({
-      title: '¡Listo para jugar!',
-      message: `Categoría: ${categoriaActual.value.nombre}<br>Nivel: ${nivel.nombre}<br>Intentos: ${nivel.intentos}`,
-      html: true,
-      ok: {
-        label: 'Comenzar',
-        color: 'primary'
-      }
-    }).onOk(() => {
-      console.log('Iniciando juego...')
-    })
+    console.log('Navegando a /juego...')
+    router.push('/juego')
   }, 500)
 }
 
@@ -342,7 +343,6 @@ const volverACategorias = () => {
 }
 
 .category-badge {
-  background: v-bind('categoriaActual.color');
   color: white;
   padding: 5px 12px;
   border-radius: 15px;
