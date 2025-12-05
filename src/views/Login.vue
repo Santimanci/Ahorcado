@@ -172,7 +172,6 @@ const iniciarSesion = async () => {
   font-weight: 700;
   margin-bottom: 10px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
