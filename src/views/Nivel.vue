@@ -82,14 +82,13 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useQuasar } from 'quasar'
+import { useQuasar } from 'quasar' // ¡IMPORTANTE!
 
 const router = useRouter()
 const route = useRoute()
-const $q = useQuasar()
+const $q = useQuasar() // ¡IMPORTANTE!
 
 const categoriaActual = computed(() => {
-  // Primero intenta obtener de los parámetros de la ruta
   if (route.query.nombre) {
     return {
       id: route.query.categoriaId,
@@ -100,7 +99,6 @@ const categoriaActual = computed(() => {
     }
   }
   
-  // Si no hay parámetros, intenta obtener del localStorage
   const categoriaGuardada = localStorage.getItem('categoriaSeleccionada')
   if (categoriaGuardada) {
     try {
@@ -110,7 +108,6 @@ const categoriaActual = computed(() => {
     }
   }
   
-  // Si todo falla, usa valores por defecto
   return {
     id: null,
     nombre: 'Categoría no especificada',
@@ -157,67 +154,54 @@ onMounted(() => {
   const usuario = localStorage.getItem('nombreUsuario')
   
   if (!usuario) {
-    $q.notify({
-      type: 'warning',
-      message: 'Por favor inicia sesión primero',
-      position: 'top'
-    })
+    // Si $q aún no está disponible, usa console.log
+    console.warn('Por favor inicia sesión primero')
     router.push('/login')
     return
   }
   
   if (!route.query.nombre && !localStorage.getItem('categoriaSeleccionada')) {
-    $q.notify({
-      type: 'info',
-      message: 'No hay categoría seleccionada. Redirigiendo...',
-      position: 'top',
-      timeout: 2000
-    })
+    console.info('No hay categoría seleccionada. Redirigiendo...')
     
     setTimeout(() => {
       router.push('/categoria')
     }, 2000)
-  } else {
-    $q.notify({
-      type: 'positive',
-      message: `Categoría "${categoriaActual.value.nombre}" cargada`,
-      position: 'top',
-      timeout: 1500
-    })
   }
 })
 
 const seleccionarNivel = (nivelSeleccionado) => {
-  console.log('Nivel seleccionado:', nivelSeleccionado)
-  console.log('Categoría actual:', categoriaActual.value)
+  console.log('🚀 Nivel seleccionado:', nivelSeleccionado)
+  console.log('🎯 Categoría actual:', categoriaActual.value)
   
-  $q.notify({
-    type: 'positive',
-    message: `¡Nivel ${nivelSeleccionado.nombre} seleccionado para "${categoriaActual.value.nombre}"!`,
-    position: 'top',
-    timeout: 1000
-  })
+  // Verificar si $q está disponible antes de usarlo
+  if (window.$q || $q) {
+    const quasar = window.$q || $q
+    quasar.notify({
+      type: 'positive',
+      message: `¡Nivel ${nivelSeleccionado.nombre} seleccionado!`,
+      position: 'top',
+      timeout: 800
+    })
+  } else {
+    console.log(`¡Nivel ${nivelSeleccionado.nombre} seleccionado!`)
+  }
   
   // Guardar nivel seleccionado en localStorage
   localStorage.setItem('nivelSeleccionado', JSON.stringify(nivelSeleccionado))
   
-  console.log('LocalStorage después de guardar:', {
-    nivel: localStorage.getItem('nivelSeleccionado'),
-    categoria: localStorage.getItem('categoriaSeleccionada')
-  })
+  console.log('💾 localStorage actualizado')
+  console.log('- Nivel:', localStorage.getItem('nivelSeleccionado'))
+  console.log('- Categoría:', localStorage.getItem('categoriaSeleccionada'))
   
-  // Navegar directamente al juego después de un breve delay
-  setTimeout(() => {
-    console.log('Navegando a /juego...')
-    router.push('/juego')
-  }, 500)
+  // Navegar directamente SIN timeout
+  console.log('🔗 Navegando a /juego...')
+  router.push('/juego')
 }
 
 const volverACategorias = () => {
   router.push('/categoria')
 }
 </script>
-
 <style scoped>
 .main-container {
   position: relative;
