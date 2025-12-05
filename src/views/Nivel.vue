@@ -14,6 +14,7 @@
       <div class="level-header">
         <div class="header-info">
           <q-btn 
+            to="/categoria"
             flat 
             round 
             icon="arrow_back" 
@@ -22,14 +23,18 @@
             title="Volver a categorías"
           />
           <div class="header-text">
-            <h1 class="title">Selecciona el Nivel</h1>
-            <div class="category-info">
-              <span class="category-badge">Categoría:</span>
-              <span class="category-name">{{ categoriaActual }}</span>
+          <h1 class="title">Selecciona el Nivel</h1>
+          <div class="category-info">
+            <div 
+              class="category-badge" 
+              :style="{ background: categoriaActual.color || '#667eea' }"
+            >
+              {{ categoriaActual.nombre }}
             </div>
           </div>
         </div>
       </div>
+    </div>
 
       <!-- Niveles de dificultad -->
       <div class="levels-container">
@@ -72,31 +77,46 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 
 const router = useRouter()
+const route = useRoute()
 const $q = useQuasar()
-const categoriaActual = ref('')
-onMounted(() => {
-  // Obtener el nombre del usuario desde localStorage
-  const usuario = localStorage.getItem('nombreUsuario')
-  
-  if (!usuario) {
-    // Si no hay usuario, redirigir al login
-    $q.notify({
-      type: 'warning',
-      message: 'Por favor inicia sesión primero',
-      position: 'top'
-    })
-    router.push('/categoria')
-    return
+
+const categoriaActual = computed(() => {
+  // Primero intenta obtener de los parámetros de la ruta
+  if (route.query.nombre) {
+    return {
+      id: route.query.categoriaId,
+      nombre: route.query.nombre,
+      descripcion: route.query.descripcion,
+      icono: route.query.icono || 'help',
+      color: route.query.color || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    }
   }
   
-  categoriaActual.value = usuario
+  // Si no hay parámetros, intenta obtener del localStorage
+  const categoriaGuardada = localStorage.getItem('categoriaSeleccionada')
+  if (categoriaGuardada) {
+    try {
+      return JSON.parse(categoriaGuardada)
+    } catch (e) {
+      console.error('Error al parsear categoría:', e)
+    }
+  }
+  
+  // Si todo falla, usa valores por defecto
+  return {
+    id: null,
+    nombre: 'Categoría no especificada',
+    descripcion: 'Selecciona una categoría primero',
+    icono: 'warning',
+    color: 'linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)'
+  }
 })  
-// Niveles de dificultad (exactamente como en tu imagen)
+
 const niveles = ref([
   {
     id: 1,
@@ -128,23 +148,68 @@ const niveles = ref([
 ])
 
 onMounted(() => {
-  // Aquí puedes cargar la categoría seleccionada si la pasas por parámetros
-  console.log('Página de niveles cargada')
+  const usuario = localStorage.getItem('nombreUsuario')
+  
+  if (!usuario) {
+    $q.notify({
+      type: 'warning',
+      message: 'Por favor inicia sesión primero',
+      position: 'top'
+    })
+    router.push('/login')
+    return
+  }
+  
+  if (!route.query.nombre && !route.params.categoriaId) {
+    $q.notify({
+      type: 'info',
+      message: 'No hay categoría seleccionada. Redirigiendo...',
+      position: 'top',
+      timeout: 2000
+    })
+    
+    setTimeout(() => {
+      router.push('/categoria')
+    }, 2000)
+  } else {
+    $q.notify({
+      type: 'positive',
+      message: `Categoría "${categoriaActual.value.nombre}" cargada`,
+      position: 'top',
+      timeout: 1500
+    })
+  }
 })
 
 const seleccionarNivel = (nivel) => {
   $q.notify({
     type: 'positive',
-    message: `¡Nivel ${nivel.nombre} seleccionado para ${categoriaActual.value.nombre}!`,
+    message: `¡Nivel ${nivel.nombre} seleccionado para "${categoriaActual.value.nombre}"!`,
     position: 'top',
     timeout: 1000
   })
   
-  console.log('Categoría:', categoriaActual.value)
-  console.log('Nivel seleccionado:', nivel)
+  console.log('Iniciando juego con:', {
+    categoria: categoriaActual.value,
+    nivel: nivel
+  })
   
-  // Aquí puedes navegar al juego con la categoría y nivel seleccionados
-  // router.push(`/juego/${categoriaActual.value.id}/${nivel.id}`)
+  localStorage.setItem('categoriaSeleccionada', JSON.stringify(categoriaActual.value))
+  localStorage.setItem('nivelSeleccionado', JSON.stringify(nivel))
+  
+  setTimeout(() => {
+    $q.dialog({
+      title: '¡Listo para jugar!',
+      message: `Categoría: ${categoriaActual.value.nombre}<br>Nivel: ${nivel.nombre}<br>Intentos: ${nivel.intentos}`,
+      html: true,
+      ok: {
+        label: 'Comenzar',
+        color: 'primary'
+      }
+    }).onOk(() => {
+      console.log('Iniciando juego...')
+    })
+  }, 500)
 }
 
 const volverACategorias = () => {

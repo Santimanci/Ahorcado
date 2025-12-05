@@ -1,5 +1,5 @@
 <template>
-  <q-page class="flex flex-center column q-pa-xl main-container">
+  <q-page class="flex flex-center column q-pa-xl main-container"> 
     <!-- Fondo animado -->
     <div class="background-animation">
       <div class="bubble bubble-1"></div>
@@ -34,25 +34,34 @@
 
       <!-- Grid de categorías -->
       <div class="categories-grid">
-        <div 
-          v-for="categoria in categorias" 
-          :key="categoria.id"
-          class="category-card"
-          @click="seleccionarCategoria(categoria)"
-          :style="{ background: categoria.color }"
-        >
-          <div class="category-icon">
-          
-            <q-icon @click = ""  :name="categoria.icono" size="40px"  />
-          </div>
-          <q-btn  to="/nivel">
-          <h3 class="category-name">{{ categoria.nombre }}</h3>
-          <p class="category-desc">{{ categoria.descripcion }}</p>
-          <div class="category-hover"></div>
-       </q-btn> 
-        
-        </div> 
+    <div 
+      v-for="categoria in categorias" 
+      :key="categoria.id"
+      class="category-card"
+      @click="seleccionarCategoria(categoria)"
+      :style="{ background: categoria.color }"
+    >
+      <div class="category-icon">
+        <q-icon :name="categoria.icono" size="40px" />
       </div>
+      <router-link 
+  :to="{
+    path: '/nivel',
+    query: {
+      categoriaId: categoria.id,
+      nombre: categoria.nombre,
+      descripcion: categoria.descripcion,
+      icono: categoria.icono,
+      color: categoria.color
+    }
+  }"
+  class="category-link"
+>
+  <h3 class="category-name">{{ categoria.nombre }}</h3>
+  <p class="category-desc">{{ categoria.descripcion }}</p>
+</router-link>    
+    </div>
+  </div>
       
 
       <!-- Instrucciones -->
@@ -147,6 +156,20 @@ const seleccionarCategoria = (categoria) => {
   
   console.log('Categoría seleccionada:', categoria)
   
+  // Guardar la categoría en localStorage para persistencia
+  localStorage.setItem('categoriaSeleccionada', JSON.stringify(categoria))
+  
+  // Navegar a la página de niveles con los parámetros
+  router.push({
+    path: '/nivel',
+    query: {
+      categoriaId: categoria.id,
+      nombre: categoria.nombre,
+      descripcion: categoria.descripcion,
+      icono: categoria.icono,
+      color: categoria.color
+    }
+  })
 }
 
 const cerrarSesion = () => {
