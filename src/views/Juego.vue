@@ -67,26 +67,28 @@
               <q-icon name="lightbulb" size="sm" color="amber-7" class="q-mr-sm" />
               <div class="column">
                 <div class="text-caption text-grey">Pista</div>
-                <div class="text-body2">{{ pistaActual }}</div>
+                <div class="text-body2">
+                  <template v-if="pistaVisible">
+                    {{ pistaActual }}
+                  </template>
+                  <template v-else>
+                    <span class="text-grey-6">
+                      {{ pistaDisponible ? 'Haz clic para ver la pista' : 'Pista ya usada' }}
+                    </span>
+                  </template>
+                </div>
               </div>
             </div>
             <q-btn 
-              icon="lightbulb_outline" 
+              :icon="pistaVisible ? 'visibility' : 'visibility_off'" 
               flat 
               round 
               dense 
-              color="amber"
-              :disable="pistasRestantes === 0 || juegoTerminado"
-              @click="usarPista"
+              :color="pistaDisponible ? 'amber' : 'grey'"
+              :disable="!pistaDisponible || juegoTerminado"
+              @click="mostrarPista"
             >
-              <q-tooltip>Usar pista ({{ pistasRestantes }} restantes)</q-tooltip>
-              <q-badge 
-                v-if="pistasRestantes > 0"
-                color="amber"
-                text-color="white"
-                floating
-                :label="pistasRestantes"
-              />
+              <q-tooltip>{{ pistaDisponible ? 'Ver pista' : 'Pista usada' }}</q-tooltip>
             </q-btn>
           </div>
         </div>
@@ -211,7 +213,7 @@
                 </q-btn>
               </div>
               
-              <!-- Teclas especiales -->
+              <!-- Teclas especiales - SOLO REINICIAR -->
               <div class="special-keys q-mt-sm">
                 <q-btn
                   icon="replay"
@@ -220,14 +222,6 @@
                   dense
                   @click="reiniciarJuego"
                   class="q-mr-sm"
-                />
-                <q-btn
-                  icon="help"
-                  label="Revelar"
-                  color="warning"
-                  dense
-                  @click="usarPista"
-                  :disable="pistasRestantes === 0 || juegoTerminado"
                 />
               </div>
             </div>
@@ -282,8 +276,8 @@
                 <div class="stat-value">{{ errores }}</div>
               </div>
               <div class="stat-item">
-                <div class="stat-label">Pistas usadas</div>
-                <div class="stat-value">{{ 2 - pistasRestantes }}</div>
+                <div class="stat-label">Pista usada</div>
+                <div class="stat-value">{{ !pistaDisponible ? 'Sí' : 'No' }}</div>
               </div>
               <div class="stat-item highlight">
                 <div class="stat-label">Puntos</div>
@@ -360,10 +354,11 @@ const nivel = ref(JSON.parse(localStorage.getItem('nivelSeleccionado')) || {
 const intentosMaximos = 11
 const palabra = ref('')
 const pistaActual = ref('')
+const pistaVisible = ref(false)
+const pistaDisponible = ref(true)
 const categoriaActual = ref('')
 const letrasAdivinadas = ref([])
 const letrasIncorrectas = ref([])
-const pistasRestantes = ref(2)
 const juegoTerminado = ref(false)
 const showResult = ref(false)
 const tiempoTranscurrido = ref(0)
@@ -550,7 +545,6 @@ const palabrasDB = {
   ]
 }
 
-
 // ========================
 // ✅ COMPUTED
 // ========================
@@ -567,6 +561,35 @@ const resultado = computed(() => {
     letrasAdivinadas.value.includes(l.toUpperCase())
   )
   return { ganado, puntos: ganado ? 100 : 0 }
+})
+
+const porcentajeAdivinado = computed(() => {
+  const letrasUnicas = [...new Set(palabra.value.toUpperCase())]
+  const adivinadas = letrasUnicas.filter(l => letrasAdivinadas.value.includes(l)).length
+  return Math.round((adivinadas / letrasUnicas.length) * 100)
+})
+
+const colorProgreso = computed(() => {
+  const pct = porcentajeAdivinado.value
+  if (pct >= 75) return 'positive'
+  if (pct >= 50) return 'warning'
+  if (pct >= 25) return 'orange'
+  return 'negative'
+})
+
+const vidasColor = computed(() => {
+  const vidasRestantes = intentosMaximos - errores.value
+  if (vidasRestantes >= 8) return 'positive'
+  if (vidasRestantes >= 5) return 'warning'
+  if (vidasRestantes >= 3) return 'orange'
+  return 'negative'
+})
+
+const expresionActual = computed(() => {
+  const vidas = intentosMaximos - errores.value
+  if (vidas >= 8) return 'neutral'
+  if (vidas >= 5) return 'worried'
+  return 'scared'
 })
 
 // ========================
@@ -608,9 +631,28 @@ const seleccionarPalabra = () => {
   palabra.value = seleccion.palabra
   pistaActual.value = seleccion.pista
   categoriaActual.value = seleccion.categoria
+  
+  // Resetear el estado de la pista
+  pistaVisible.value = false
+  pistaDisponible.value = true
 }
 
-
+// ========================
+// ✅ MOSTRAR PISTA
+// ========================
+const mostrarPista = () => {
+  if (!pistaDisponible.value || juegoTerminado.value) return
+  
+  pistaVisible.value = true
+  pistaDisponible.value = false
+  
+  // La pista se oculta automáticamente después de 5 segundos
+  setTimeout(() => {
+    if (!juegoTerminado.value && pistaVisible.value) {
+      pistaVisible.value = false
+    }
+  }, 5000)
+}
 
 // ========================
 // ✅ JUEGO
@@ -644,6 +686,7 @@ const probarLetra = (letra) => {
     }
   }
 }
+
 const guardarEnRanking = (puntos, tiempoTotal) => {
   const nombre = localStorage.getItem('nombreUsuario')
 
@@ -662,7 +705,7 @@ const guardarEnRanking = (puntos, tiempoTotal) => {
     jugadorExistente.partidas += 1
   } else {
     ranking.push({
-      nombre,                // ✅ AQUÍ se guarda el nombre
+      nombre,
       puntos: puntos,
       tiempoTotal: tiempoTotal,
       partidas: 1
@@ -698,6 +741,7 @@ const terminarJuego = (ganado) => {
     nivel: nivel.value.nombre,
     tiempo: tiempo,
     errores: errores.value,
+    pistaUsada: !pistaDisponible.value,
     ganado
   })
 
@@ -706,16 +750,17 @@ const terminarJuego = (ganado) => {
   showResult.value = true
 }
 
-
 // ========================
 // ✅ REINICIAR
 // ========================
 const reiniciarJuego = () => {
   letrasAdivinadas.value = []
   letrasIncorrectas.value = []
-  pistasRestantes.value = 2
+  pistaVisible.value = false
+  pistaDisponible.value = true
   juegoTerminado.value = false
   tiempoTranscurrido.value = 0
+  showResult.value = false
 
   seleccionarPalabra()
   iniciarCronometro()
@@ -726,6 +771,30 @@ const reiniciarJuego = () => {
 // ========================
 const confirmarSalida = () => {
   router.push('/nivel')
+}
+
+const cambiarNivel = () => {
+  router.push('/nivel')
+}
+
+const animarLetra = (index) => {
+  // Animación opcional al hacer clic en una letra
+  console.log('Letra clickeada:', index)
+}
+
+const compartirResultado = () => {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Resultado del Ahorcado',
+      text: `¡Adiviné la palabra "${palabra.value}" en ${tiempoFormateado.value}!`,
+      url: window.location.href
+    })
+  } else {
+    $q.notify({
+      message: '¡Resultado copiado al portapapeles!',
+      color: 'positive'
+    })
+  }
 }
 
 // ========================
