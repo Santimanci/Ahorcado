@@ -1213,7 +1213,6 @@ onUnmounted(() => detenerCronometro())
   width: 100%;
   max-width: 480px;
   border-radius: 20px;
-  overflow: hidden;
 }
 
 .result-header {
